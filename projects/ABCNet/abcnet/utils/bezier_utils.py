@@ -43,6 +43,8 @@ def bezier2curve(bezier: np.ndarray, num_sample: int = 10):
 
 def poly2bezier(poly):
     poly = np.array(poly).reshape(-1, 2)
+    if len(poly) == 5:
+        poly = poly[:4]
     points_num = len(poly)
     up_curve = poly[:points_num // 2]
     down_curve = poly[points_num // 2:]
