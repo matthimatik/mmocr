@@ -166,7 +166,7 @@ def crop_polygon(polygon: ArrayLike,
         poly_cropped = poly_cropped.T
         # reverse poly_cropped to have clockwise order
         poly_cropped = poly_cropped[::-1, :].reshape(-1)
-        return poly_cropped
+        return poly_cropped[:8]
 
 
 def poly_make_valid(poly: Polygon) -> Polygon:
