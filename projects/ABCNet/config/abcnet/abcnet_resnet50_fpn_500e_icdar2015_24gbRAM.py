@@ -13,3 +13,20 @@ _base_.train_dataloader.dataset.pipeline[5].scales = [
     (1050, 2900), (1100, 2900), (1160, 2900), (1210, 2900),
     (1270, 2900),
 ]
+
+
+load_from = "https://download.openmmlab.com/mmocr/textspotting/abcnet/abcnet_resnet50_fpn_500e_icdar2015/abcnet_resnet50_fpn_500e_icdar2015-326ac6f4.pth"
+
+
+# runtime settings
+_base_.default_hooks.visualization = dict(
+    type='VisualizationHook',
+    interval=20,
+    enable=True,
+    show=False,
+    draw_gt=True,
+    draw_pred=True,
+)
+
+_base_.train_cfg.val_interval = 2
+
