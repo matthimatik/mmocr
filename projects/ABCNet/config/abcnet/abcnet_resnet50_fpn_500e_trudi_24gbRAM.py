@@ -66,6 +66,7 @@ load_from = 'https://download.openmmlab.com/mmocr/textspotting/abcnet/abcnet_res
 
 find_unused_parameters = True
 
+assert _base_.train_dataloader.dataset.pipeline[5].type == 'RandomChoiceResize', 'The 6th step of train pipeline should be RandomChoiceResize so we can adjust the scales. If not, please check the train pipeline in the base config.'
 train_dataloader["dataset"]["pipeline"][5]["scales"] = [
     (740, 2600), (800, 2600), (860, 2600), (920, 2600),
     (980, 2600), (1040, 2600), (1100, 2600),
