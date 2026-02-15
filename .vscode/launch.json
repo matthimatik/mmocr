@@ -21,6 +21,7 @@
                 "PYTHONPATH": "${workspaceFolder}/projects/ABCNet"
             },
             "cwd": "${workspaceFolder}/projects/ABCNet",
+            "justMyCode": false
         },
     ]
 }
