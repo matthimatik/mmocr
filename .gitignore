@@ -109,7 +109,6 @@ venv.bak/
 # cython generated cpp
 !data/dict
 /data
-.vscode
 .idea
 
 # custom
