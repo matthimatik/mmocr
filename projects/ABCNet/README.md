@@ -75,6 +75,10 @@ To find more variants, please visit the [official model zoo](https://github.com/
 |         Name          |                                  Pretrained Model                                  | E2E-None-Hmean | det-Hmean |                                  Download                                  |
 | :-------------------: | :--------------------------------------------------------------------------------: | :------------: | :-------: | :------------------------------------------------------------------------: |
 | v1-icdar2015-finetune | [SynthText](https://download.openmmlab.com/mmocr/textspotting/abcnet/abcnet_resnet50_fpn_500e_icdar2015/abcnet_resnet50_fpn_pretrain-d060636c.pth) |     0.6127     |  0.8753   | [model](https://download.openmmlab.com/mmocr/textspotting/abcnet/abcnet_resnet50_fpn_500e_icdar2015/abcnet_resnet50_fpn_500e_icdar2015-326ac6f4.pth) \| [log](https://download.openmmlab.com/mmocr/textspotting/abcnet/abcnet_resnet50_fpn_500e_icdar2015/20221210_170401.log) |
+| trudi-finetune | [SynthText](https://download.openmmlab.com/mmocr/textspotting/abcnet/abcnet_resnet50_fpn_500e_icdar2015/abcnet_resnet50_fpn_pretrain-d060636c.pth) |     0.2577     |  0.6331   | `work_dirs/abcnet_trudi_full/epoch_200.pth` (local) |
+
+Finetuned on TRUDI (200 epochs, lr 1e-5, BatchNorm-adapted, `#` = illegible-character placeholder
+which is excluded from the recognition loss via `ignore_char='#'`). Best E2E hmean at e185, best det-hmean 0.6331 at e185.
 
 ## Citation
 

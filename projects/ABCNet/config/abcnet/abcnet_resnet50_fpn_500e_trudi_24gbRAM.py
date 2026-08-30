@@ -35,8 +35,16 @@ trudi_textspotting_train.pipeline = _base_.train_pipeline
 trudi_textspotting_test = _base_.trudi_textspotting_test
 trudi_textspotting_test.pipeline = _base_.test_pipeline
 
+# Prepared split-level data (from /data/8hirsch/trudi_ds/mmocr_textspotting).
+# Each split dir holds its own textdet_imgs/ and textspotting.json whose
+# img_path entries are relative to that split dir.
+trudi_textspotting_train.data_root = '/data/8hirsch/trudi_ds/mmocr_textspotting/train'
+trudi_textspotting_train.ann_file = 'textspotting.json'
+trudi_textspotting_test.data_root = '/data/8hirsch/trudi_ds/mmocr_textspotting/val'
+trudi_textspotting_test.ann_file = 'textspotting.json'
+
 train_dataloader = dict(
-    batch_size=2,
+    batch_size=1,
     num_workers=1,
     # num_workers=8,
     persistent_workers=True,
@@ -66,7 +74,7 @@ load_from = 'https://download.openmmlab.com/mmocr/textspotting/abcnet/abcnet_res
 
 find_unused_parameters = True
 
-assert _base_.train_dataloader.dataset.pipeline[5].type == 'RandomChoiceResize', 'The 6th step of train pipeline should be RandomChoiceResize so we can adjust the scales. If not, please check the train pipeline in the base config.'
+assert train_dataloader["dataset"]["pipeline"][5].type == 'RandomChoiceResize', 'The 6th step of train pipeline should be RandomChoiceResize so we can adjust the scales. If not, please check the train pipeline in the base config.'
 train_dataloader["dataset"]["pipeline"][5]["scales"] = [
     (740, 2600), (800, 2600), (860, 2600), (920, 2600),
     (980, 2600), (1040, 2600), (1100, 2600),

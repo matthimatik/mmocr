@@ -48,6 +48,12 @@ class RecRoIHead(BaseRoIHead):
         ]
 
         proposals = [p for p in proposals if len(p) > 0]
+        if len(proposals) == 0:
+            # A batch can contain zero valid (non-ignored) text instances,
+            # e.g. after aggressive cropping. Skip the ROI extraction and
+            # return a graph-connected zero loss to keep DDP in sync.
+            loss_ce = inputs[0].sum() * 0
+            return dict(loss_ce=loss_ce)
         bbox_feats = self.roi_extractor(inputs, proposals)
         rec_data_samples = [
             TextRecogDataSample(gt_text=LabelData(item=text))

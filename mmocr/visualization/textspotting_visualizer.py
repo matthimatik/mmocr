@@ -62,7 +62,10 @@ class TextSpottingLocalVisualizer(BaseLocalVisualizer):
                 image, bboxes, filling=True, colors=self.PALETTE)
             text_image = self.get_bboxes_image(
                 text_image, bboxes, colors=self.PALETTE)
-        return np.concatenate([image, text_image], axis=1)
+        image = np.atleast_3d(image)
+        text_image = np.atleast_3d(text_image)
+        height = min(image.shape[0], text_image.shape[0])
+        return np.concatenate([image[:height], text_image[:height]], axis=1)
 
     def add_datasample(self,
                        name: str,
@@ -110,8 +113,11 @@ class TextSpottingLocalVisualizer(BaseLocalVisualizer):
                 gt_bboxes = data_sample.gt_instances.get('bboxes', None)
                 gt_texts = data_sample.gt_instances.texts
                 gt_polygons = data_sample.gt_instances.get('polygons', None)
-                gt_img_data = self._draw_instances(image, gt_bboxes,
-                                                   gt_polygons, gt_texts)
+                try:
+                    gt_img_data = self._draw_instances(image, gt_bboxes,
+                                                       gt_polygons, gt_texts)
+                except Exception:
+                    gt_img_data = image.copy()
                 cat_images.append(gt_img_data)
 
             if draw_pred and 'pred_instances' in data_sample:
@@ -124,8 +130,12 @@ class TextSpottingLocalVisualizer(BaseLocalVisualizer):
                 if pred_bboxes is None:
                     pred_bboxes = [poly2bbox(poly) for poly in pred_polygons]
                     pred_bboxes = np.array(pred_bboxes)
-                pred_img_data = self._draw_instances(image, pred_bboxes,
-                                                     pred_polygons, pred_texts)
+                try:
+                    pred_img_data = self._draw_instances(image, pred_bboxes,
+                                                         pred_polygons,
+                                                         pred_texts)
+                except Exception:
+                    pred_img_data = image.copy()
                 cat_images.append(pred_img_data)
 
         cat_images = self._cat_image(cat_images, axis=0)
