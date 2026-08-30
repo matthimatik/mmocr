@@ -41,10 +41,44 @@ def bezier2curve(bezier: np.ndarray, num_sample: int = 10):
     return np.array(bezier_coefficients(3, 4, t)).dot(bezier)
 
 
+def reorder_quad_to_reading_axis(poly) -> np.ndarray:
+    """Reorder a quad to [TL, TR, BR, BL].
+
+    ICDAR-style quads are given in clockwise order but may start at any
+    corner (e.g. bottom-left). ``poly2bezier`` treats the first two points
+    as the reading (top) edge, so without this normalization a *short*
+    (left/right) edge would be used as the reading axis and the resulting
+    ``BezierAlign`` crops would be rotated ~90 degrees.
+
+    The quad's reading axis is assumed to be the longer opposite edge pair
+    (text spans along its length). Each of the two reading-parallel edges is
+    then oriented left->right so the output is traversed clockwise starting
+    from the top-left corner.
+
+    Args:
+        poly (ArrayLike): quad of shape (4, 2) in cyclic boundary order.
+
+    Returns:
+        np.ndarray: quad of shape (4, 2) as [TL, TR, BR, BL].
+    """
+    p = np.array(poly).reshape(4, 2).copy()
+    edges = [np.linalg.norm(p[(i + 1) % 4] - p[i]) for i in range(4)]
+    if edges[1] + edges[3] > edges[0] + edges[2]:
+        p = p[[1, 2, 3, 0]]
+    top, bottom = p[:2].copy(), p[2:].copy()
+    for edge in (top, bottom):
+        if edge[1, 0] < edge[0, 0] or (edge[1, 0] == edge[0, 0]
+                                       and edge[1, 1] < edge[0, 1]):
+            edge[0], edge[1] = edge[1].copy(), edge[0].copy()
+    return np.vstack((top, bottom[::-1]))
+
+
 def poly2bezier(poly):
     poly = np.array(poly).reshape(-1, 2)
     if len(poly) == 5:
         poly = poly[:4]
+    elif len(poly) == 4:
+        poly = reorder_quad_to_reading_axis(poly)
     points_num = len(poly)
     up_curve = poly[:points_num // 2]
     down_curve = poly[points_num // 2:]
