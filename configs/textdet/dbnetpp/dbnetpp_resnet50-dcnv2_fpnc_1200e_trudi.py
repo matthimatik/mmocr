@@ -9,13 +9,13 @@ load_from = 'https://download.openmmlab.com/mmocr/textdet/dbnetpp/tmp_1.0_pretra
 
 trudi_train_pipeline = [
     dict(type='LoadImageFromFile', color_type='color_ignore_orientation'),
-    dict(type='Resize', scale=(1920, 1920), keep_ratio=True),
     dict(
         type='LoadOCRAnnotations',
         with_bbox=True,
         with_polygon=True,
         with_label=True,
     ),
+    dict(type='Resize', scale=(1920, 1920), keep_ratio=True),
     dict(
         type='TorchVisionWrapper',
         op='ColorJitter',
@@ -59,7 +59,7 @@ test_dataloader = val_dataloader
 
 auto_scale_lr = dict(base_batch_size=8)
 
-_base_.optim_wrapper.optimizer.lr = 0.014
+_base_.optim_wrapper.optimizer.lr = 0.0035
 _base_.param_scheduler = [
     dict(type='PolyLR', power=0.9, eta_min=1e-7, end=600),
 ]
