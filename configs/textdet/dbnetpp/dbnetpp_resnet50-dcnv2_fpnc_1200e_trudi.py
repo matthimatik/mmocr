@@ -9,6 +9,7 @@ load_from = 'https://download.openmmlab.com/mmocr/textdet/dbnetpp/tmp_1.0_pretra
 
 trudi_train_pipeline = [
     dict(type='LoadImageFromFile', color_type='color_ignore_orientation'),
+    dict(type='Resize', scale=(1920, 1920), keep_ratio=True),
     dict(
         type='LoadOCRAnnotations',
         with_bbox=True,
@@ -39,9 +40,10 @@ trudi_textdet_val = _base_.trudi_textdet_val
 trudi_textdet_val.pipeline = _base_.test_pipeline
 
 train_dataloader = dict(
-    batch_size=2,
+    batch_size=4,
     num_workers=8,
     persistent_workers=True,
+    pin_memory=True,
     sampler=dict(type='DefaultSampler', shuffle=True),
     dataset=trudi_textdet_train)
 
@@ -49,12 +51,20 @@ val_dataloader = dict(
     batch_size=1,
     num_workers=4,
     persistent_workers=True,
+    pin_memory=True,
     sampler=dict(type='DefaultSampler', shuffle=False),
     dataset=trudi_textdet_val)
 
 test_dataloader = val_dataloader
 
-auto_scale_lr = dict(base_batch_size=4)
+auto_scale_lr = dict(base_batch_size=8)
+
+_base_.optim_wrapper.optimizer.lr = 0.014
+_base_.param_scheduler = [
+    dict(type='PolyLR', power=0.9, eta_min=1e-7, end=600),
+]
+
+_base_.env_cfg.cudnn_benchmark = True
 
 _base_.train_cfg.max_epochs = 600
 _base_.train_cfg.val_interval = 20
