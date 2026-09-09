@@ -1,0 +1,23 @@
+Name: 'Trudi'
+Paper:
+  Title: TRUDI - Transportation Unit Detection and Identification Dataset
+  URL: ''
+  Venue: ''
+  Year: ''
+  BibTeX: ''
+Data:
+  Website: https://github.com/matthimatik/trudi
+  Language:
+    - English
+  Scene:
+    - Natural Scene
+    - Aerial
+    - Ground
+  Granularity:
+    - Text-line
+  Tasks:
+    - textdet
+  License:
+    Type: ''
+    Link: ''
+  Format: .json

@@ -6,9 +6,10 @@ from .recog_lmdb_dataset import RecogLMDBDataset
 from .recog_text_dataset import RecogTextDataset
 from .samplers import *  # NOQA
 from .transforms import *  # NOQA
+from .trudi_dataset import TrudiDataset
 from .wildreceipt_dataset import WildReceiptDataset
 
 __all__ = [
     'IcdarDataset', 'OCRDataset', 'RecogLMDBDataset', 'RecogTextDataset',
-    'WildReceiptDataset', 'ConcatDataset'
+    'TrudiDataset', 'WildReceiptDataset', 'ConcatDataset'
 ]
