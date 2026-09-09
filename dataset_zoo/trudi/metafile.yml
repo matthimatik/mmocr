@@ -17,6 +17,8 @@ Data:
     - Text-line
   Tasks:
     - textdet
+    - textrecog
+    - textspotting
   License:
     Type: ''
     Link: ''

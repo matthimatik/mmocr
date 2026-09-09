@@ -8,10 +8,16 @@ from mmengine import mkdir_or_exist
 
 from mmocr.registry import DATA_OBTAINERS
 
+_TASK_ANN_FILES = {
+    'textdet': 'textdet.json',
+    'textspotting': 'textspotting.json',
+    'textrecog': 'textrecog.json',
+}
+
 
 @DATA_OBTAINERS.register_module()
 class TrudiObtainer:
-    """Obtain the TRUDI text detection dataset.
+    """Obtain one of the TRUDI text datasets.
 
     The TRUDI (Transportation Unit Detection and Identification) dataset is
     distributed as a git repository of labelme annotations plus scripts that
@@ -40,7 +46,8 @@ class TrudiObtainer:
             file in most cases.
         task (str): The task of the dataset. It is usually set automatically
             and users do not need to set it manually in config file in most
-            cases.
+            cases. Determines the annotation file name ('textdet.json',
+            'textspotting.json' or 'textrecog.json').
         repo_url (str): The git URL of the TRUDI repository. Defaults to
             'git@github.com:matthimatik/trudi.git'.
         repo_dir (str, optional): Name of the directory the repository is
@@ -52,6 +59,9 @@ class TrudiObtainer:
             checkout to use instead of cloning ``repo_url``. Defaults to None.
         download_images (bool): Whether to run ``trudi download_images``.
             Defaults to True.
+        ann_file (str, optional): The name of the annotation file written
+            per split. If not set, it is derived from ``task`` by
+            :data:`_TASK_ANN_FILES`. Defaults to None.
     """
 
     def __init__(self,
@@ -62,7 +72,8 @@ class TrudiObtainer:
                  repo_dir: Optional[str] = 'trudi',
                  target: str = 'v2/text_detection[type=id_iso6346]/mmocr',
                  local_repo: Optional[str] = None,
-                 download_images: bool = True) -> None:
+                 download_images: bool = True,
+                 ann_file: Optional[str] = None) -> None:
         self.cache_path = cache_path
         self.data_root = data_root
         self.task = task
@@ -70,6 +81,11 @@ class TrudiObtainer:
         self.target = target
         self.local_repo = local_repo if local_repo is not None else ''
         self.download_images = download_images
+        self.ann_file = ann_file or _TASK_ANN_FILES.get(task)
+        if self.ann_file is None:
+            raise ValueError(f'Unknown TRUDI task {task!r}; expected one of '
+                             f'{sorted(_TASK_ANN_FILES)} or an explicit '
+                             'ann_file.')
         self.repo_dir = (osp.join(cache_path, repo_dir) if repo_dir
                          else cache_path)
         mkdir_or_exist(self.cache_path)
@@ -87,7 +103,7 @@ class TrudiObtainer:
     def _already_prepared(self) -> bool:
         """Whether every split directory is already present."""
         return all(
-            osp.exists(osp.join(self.data_root, split, 'textdet.json'))
+            osp.exists(osp.join(self.data_root, split, self.ann_file))
             for split in ('train', 'val', 'test'))
 
     def _obtain_repo(self) -> str:

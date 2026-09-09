@@ -76,3 +76,33 @@ class TestTrudiObtainer(unittest.TestCase):
     def test_missing_local_repo(self):
         with self.assertRaises(FileNotFoundError):
             self._obtainer(local_repo=osp.join(self.root, 'nope'))()
+
+    def test_task_ann_file_inference(self):
+        tasks = {
+            'textdet': 'textdet.json',
+            'textspotting': 'textspotting.json',
+            'textrecog': 'textrecog.json',
+        }
+        for task, ann_file in tasks.items():
+            obtainer = TrudiObtainer(
+                cache_path=self.cache_path,
+                data_root=self.data_root,
+                task=task,
+                local_repo=self.local_repo)
+            self.assertEqual(obtainer.ann_file, ann_file)
+
+    def test_unknown_task(self):
+        with self.assertRaises(ValueError):
+            TrudiObtainer(
+                cache_path=self.cache_path,
+                data_root=self.data_root,
+                task='icdar')
+
+    def test_explicit_ann_file(self):
+        obtainer = TrudiObtainer(
+            cache_path=self.cache_path,
+            data_root=self.data_root,
+            task='textdet',
+            local_repo=self.local_repo,
+            ann_file='my_anns.json')
+        self.assertEqual(obtainer.ann_file, 'my_anns.json')
