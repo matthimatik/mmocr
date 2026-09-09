@@ -88,6 +88,8 @@ class TextDetConfigGenerator(BaseDatasetConfigGenerator):
             cfg += '    type=\'OCRDataset\',\n'
             cfg += '    data_root=' + f'{self.dataset_name}_{self.task}_data_root,\n'  # noqa: E501
             cfg += f'    ann_file=\'{ann_dict["ann_file"]}\',\n'
+            if 'data_prefix' in ann_dict:
+                cfg += f'    data_prefix=dict(img_path=\'{ann_dict["data_prefix"]["img_path"]}\'),\n'  # noqa: E501
             if ann_dict['split'] == 'train':
                 cfg += '    filter_cfg=dict(filter_empty_gt=True, min_size=32),\n'  # noqa: E501
             elif ann_dict['split'] in ['test', 'val']:

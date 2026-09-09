@@ -122,6 +122,8 @@ class TextRecogConfigGenerator(BaseDatasetConfigGenerator):
             cfg += f'    type=\'{ann_dict["dataset_type"]}\',\n'
             cfg += f'    data_root={self.dataset_name}_{self.task}_data_root,\n'  # noqa: E501
             cfg += f'    ann_file=\'{ann_dict["ann_file"]}\',\n'
+            if 'data_prefix' in ann_dict:
+                cfg += f'    data_prefix=dict(img_path=\'{ann_dict["data_prefix"]["img_path"]}\'),\n'  # noqa: E501
             if ann_dict['split'] in ['test', 'val']:
                 cfg += '    test_mode=True,\n'
             cfg += '    pipeline=None)\n'

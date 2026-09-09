@@ -1,25 +1,25 @@
 trudi_textspotting_data_root = 'data/trudi'
 
 trudi_textspotting_train = dict(
-    type='TrudiDataset',
-    split='train',
+    type='OCRDataset',
     data_root=trudi_textspotting_data_root,
-    ann_file='textspotting.json',
+    ann_file='train/textspotting.json',
+    data_prefix=dict(img_path='train'),
     filter_cfg=dict(filter_empty_gt=True, min_size=32),
     pipeline=None)
 
 trudi_textspotting_val = dict(
-    type='TrudiDataset',
-    split='val',
+    type='OCRDataset',
     data_root=trudi_textspotting_data_root,
-    ann_file='textspotting.json',
+    ann_file='val/textspotting.json',
+    data_prefix=dict(img_path='val'),
     test_mode=True,
     pipeline=None)
 
 trudi_textspotting_test = dict(
-    type='TrudiDataset',
-    split='test',
+    type='OCRDataset',
     data_root=trudi_textspotting_data_root,
-    ann_file='textspotting.json',
+    ann_file='test/textspotting.json',
+    data_prefix=dict(img_path='test'),
     test_mode=True,
     pipeline=None)

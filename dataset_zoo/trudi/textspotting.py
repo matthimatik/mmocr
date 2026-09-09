@@ -25,4 +25,17 @@ test_preparer = dict(
         repo_url=repo_url,
         target=target))
 
-config_generator = dict(type='TrudiTextSpottingConfigGenerator')
+config_generator = dict(
+    type='TextSpottingConfigGenerator',
+    train_anns=[
+        dict(ann_file='train/textspotting.json',
+             data_prefix=dict(img_path='train'))
+    ],
+    val_anns=[
+        dict(ann_file='val/textspotting.json',
+             data_prefix=dict(img_path='val'))
+    ],
+    test_anns=[
+        dict(ann_file='test/textspotting.json',
+             data_prefix=dict(img_path='test'))
+    ])

@@ -47,6 +47,36 @@ class TestTextDetConfigGenerator(unittest.TestCase):
                     "    ann_file='textdet_test.json',\n"
                     '    test_mode=True,\n'
                     '    pipeline=None)\n'))
+
+    def test_textdet_config_generator_with_data_prefix(self):
+        config_generator = TextDetConfigGenerator(
+            data_root=self.root.name,
+            dataset_name='dummy',
+            train_anns=[
+                dict(
+                    ann_file='train/textdet_train.json',
+                    dataset_postfix='',
+                    data_prefix=dict(img_path='train'))
+            ],
+            val_anns=[],
+            test_anns=[],
+            config_path=self.root.name,
+        )
+        cfg_path = osp.join(self.root.name, 'textdet', '_base_', 'datasets',
+                            'dummy.py')
+        config_generator()
+        f = open(cfg_path, 'r')
+        lines = ''.join(f.readlines())
+        self.assertEquals(
+            lines, (f"dummy_textdet_data_root = '{self.root.name}'\n"
+                    '\n'
+                    'dummy_textdet_train = dict(\n'
+                    "    type='OCRDataset',\n"
+                    '    data_root=dummy_textdet_data_root,\n'
+                    "    ann_file='train/textdet_train.json',\n"
+                    "    data_prefix=dict(img_path='train'),\n"
+                    '    filter_cfg=dict(filter_empty_gt=True, min_size=32),\n'
+                    '    pipeline=None)\n'))
         with self.assertRaises(ValueError):
             TextDetConfigGenerator(
                 data_root=self.root.name,

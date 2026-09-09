@@ -25,4 +25,17 @@ test_preparer = dict(
         repo_url=repo_url,
         target=target))
 
-config_generator = dict(type='TrudiTextRecogConfigGenerator')
+config_generator = dict(
+    type='TextRecogConfigGenerator',
+    train_anns=[
+        dict(ann_file='train/textrecog.json',
+             data_prefix=dict(img_path='train'))
+    ],
+    val_anns=[
+        dict(ann_file='val/textrecog.json',
+             data_prefix=dict(img_path='val'))
+    ],
+    test_anns=[
+        dict(ann_file='test/textrecog.json',
+             data_prefix=dict(img_path='test'))
+    ])
