@@ -26,6 +26,12 @@ class TestConcatDataset(TestCase):
         init_default_scope('mmocr')
         dataset = OCRDataset
 
+        # Mock parse_data_info on the class, but restore it afterwards so the
+        # mock does not leak into other tests (it is a class attribute).
+        self._orig_parse_data_info = dataset.parse_data_info
+        self.addCleanup(setattr, dataset, 'parse_data_info',
+                        self._orig_parse_data_info)
+
         # create dataset_a
         data_info = dict(filename='img_1.jpg', height=720, width=1280)
         dataset.parse_data_info = MagicMock(return_value=data_info)
