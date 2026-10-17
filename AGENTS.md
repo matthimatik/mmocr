@@ -37,6 +37,11 @@ Always run from the repository root; configs and the dataset preparer use relati
 python tools/train.py configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_1200e_trudi.py \
     --work-dir work_dirs/dbnetpp_trudi
 
+# Fine-tune DBNet++ on TRUDI id_texts from the ICDAR2015 checkpoint (results:
+# configs/textdet/dbnetpp/README.md; or just run train_dbnetpp_trudi.sh)
+python tools/train.py configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_200e_trudi.py \
+    --work-dir work_dirs/dbnetpp_trudi_200e
+
 # Evaluate
 python tools/test.py configs/<config>.py work_dirs/<exp>/<ckpt>.pth
 
@@ -48,7 +53,9 @@ python tools/infer.py demo/demo_text_ocr.jpg --det DBNet --rec CRNN --print-resu
 python tools/dataset_converters/prepare_dataset.py <name> --task textdet
 
 # Visualize a dataset pipeline
-python tools/analysis_tools/browse_dataset.py configs/textdet/_base_/datasets/trudi.py
+python tools/visualizations/browse_dataset.py \
+    configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_200e_trudi.py \
+    --phase train --mode pipeline --show-number 4 --not-show --output-dir /tmp/browse
 
 # Tests
 pytest tests -q
@@ -63,11 +70,12 @@ package, `mim train/test mmocr …` does **not** work here: mim resolves mmocr t
 
 ### Gotchas
 
-- **GPU count / helper scripts**: this machine has 1 GPU. The `train_*.sh` helpers and some
-  scripts under `projects/` assume `--nproc_per_node=2` **and hard-code the absolute path
-  `/data/8hirsch/mmocr`** (interpreter, PYTHONPATH, config paths) — in a clone at another
-  location they run the wrong tree or fail. Prefer the inline commands in Quick commands;
-  if you do use them, override with `--nproc_per_node=1` and fix the paths first.
+- **GPU count / helper scripts**: this machine has 1 GPU. `train_dbnetpp_trudi.sh` is
+  single-GPU and launches the TRUDI DBNet++ fine-tune; `train_trudi.sh` (ABCNet) and some
+  scripts under `projects/` still assume `--nproc_per_node=2` **and hard-code the absolute
+  path `/data/8hirsch/mmocr`** (interpreter, PYTHONPATH, config paths) — in a clone at
+  another location they run the wrong tree or fail. Prefer the inline commands in Quick
+  commands; if you do use them, override with `--nproc_per_node=1` and fix the paths first.
   Two ranks on one 24 GB GPU will OOM or crash.
 - **`projects/` packages are not installed**: configs that import from `projects/…`
   (e.g. ABCNet) need the project dir on `PYTHONPATH`:
@@ -90,10 +98,16 @@ package, `mim train/test mmocr …` does **not** work here: mim resolves mmocr t
 
 - Preparation configs live in `dataset_zoo/<name>/<task>.py`; output goes to `data/<name>/`.
 - TRUDI: `python tools/dataset_converters/prepare_dataset.py trudi --task textdet` (also
-  `textrecog`, `textspotting`). The obtainer clones the TRUDI repo into `data/cache/`, runs
-  `uv sync` + `uv run trudi download_images` (~4 GB) and `uv run trudi build …`, then copies
-  the split dirs to `data/trudi/{train,val,test}/`. It is idempotent: existing prepared splits
-  are skipped.
+  `textrecog`, `textspotting`). The obtainer reuses the local TRUDI checkout
+  (`local_repo=/data/8hirsch/trudi` in `dataset_zoo/trudi/textdet.py`; set it to `None` to
+  clone into `data/cache/` instead), runs `uv sync` + `uv run trudi download_images` (no-op
+  when the images are already there) and `uv run trudi build …`, then copies the split dirs
+  to `data/trudi/{train,val,test}/`. It is idempotent: existing prepared splits are skipped.
+- The textdet target covers **all id_text types** (iso6346, en13044_1, registration_number,
+  size_and_type_*); `textrecog`/`textspotting` still use `type=id_iso6346` only.
+- Fine-tuned DBNet++ results and release-style weights (same `.pth` layout as the openmmlab
+  checkpoints) are documented in `configs/textdet/dbnetpp/README.md`; artifacts live in
+  `work_dirs/dbnetpp_trudi_200e/` (gitignored — retrain to regenerate).
 - Base configs for TRUDI textdet/textrecog/textspotting are in
   `configs/{textdet,textrecog,textspotting}/_base_/datasets/trudi.py` (`data/trudi`).
 - The TRUDI dataset itself: <https://github.com/matthimatik/trudi>.
@@ -121,5 +135,8 @@ alone), suspect cross-test pollution in `tests/` before suspecting the environme
 - `projects/ABCNet/` — ABCNet text spotter (mmdet-based), TRUDI finetune configs under
   `projects/ABCNet/config/abcnet/`.
 - `configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_1200e_trudi.py` — TRUDI DBNet++ config.
+- `configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_200e_trudi.py` — TRUDI id_text
+  fine-tune (ICDAR2015 init, early-stopped at epoch 73; results/weights in the dbnetpp
+  README) — the run `train_dbnetpp_trudi.sh` reproduces.
 - `setup_env.sh` — pinned environment bootstrap; keep it in sync with this file.
 - Upstream contribution flow (pre-commit, CI) is described in `.github/CONTRIBUTING.md`.

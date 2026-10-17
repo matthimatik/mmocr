@@ -28,6 +28,48 @@ Recently, segmentation-based scene text detection methods have drawn extensive a
 | [DBNetpp_r50dcn](/configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_1200e_icdar2015.py) |          ResNet50-dcnv2          | [Synthtext](/configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_100k_synthtext.py) ([model](https://download.openmmlab.com/mmocr/textdet/dbnetpp/tmp_1.0_pretrain/dbnetpp_r50dcnv2_fpnc_100k_iter_synthtext-20220502-352fec8a.pth)) | ICDAR2015 Train | ICDAR2015 Test |  1200   |   1024    |  0.9116   | 0.8291 | 0.8684 | [model](https://download.openmmlab.com/mmocr/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_1200e_icdar2015/dbnetpp_resnet50-dcnv2_fpnc_1200e_icdar2015_20220829_230108-f289bd20.pth) \| [log](https://download.openmmlab.com/mmocr/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_1200e_icdar2015/20220829_230108.log) |
 | [DBNetpp_r50-oclip](/configs/textdet/dbnetpp/dbnetpp_resnet50-oclip_fpnc_1200e_icdar2015.py) | [ResNet50-oCLIP](https://download.openmmlab.com/mmocr/backbone/resnet50-oclip-7ba0c533.pth) |                    -                     | ICDAR2015 Train | ICDAR2015 Test |  1200   |   1024    |  0.9174   | 0.8609 | 0.8882 | [model](https://download.openmmlab.com/mmocr/textdet/dbnetpp/dbnetpp_resnet50-oclip_fpnc_1200e_icdar2015/dbnetpp_resnet50-oclip_fpnc_1200e_icdar2015_20221101_124139-4ecb39ac.pth) \| [log](https://download.openmmlab.com/mmocr/textdet/dbnetpp/dbnetpp_resnet50-oclip_fpnc_1200e_icdar2015/20221101_124139.log) |
 
+### TRUDI
+
+Fine-tuned on the [TRUDI](https://github.com/matthimatik/trudi) `id_text` detection
+task (all id_text types: `id_iso6346`, `id_en13044_1`, `id_registration_number`,
+`size_and_type_iso6346`, `size_and_type_adr_rid`, `size_and_type_mawp`,
+`size_and_type_portable_tank_instruction`), starting from the
+[ICDAR2015](/configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_1200e_icdar2015.py)
+DBNetpp_r50dcn checkpoint. Dataset: 1617/346/347 train/val/test images with
+13277/2831/2742 instances (fully illegible texts are `ignore`d). The run was stopped
+after epoch 73 of the 200-epoch schedule; the released weights are the best val
+checkpoint (epoch 60). Metrics are reported by `HmeanIOUMetric` at the
+best-matching score threshold, as for the benchmarks above.
+
+|                                      Method                                       |    BackBone    |                       Pretrained Model                       | Training set | Test set | #epochs | Test size | Precision | Recall | Hmean  |                             Download                             |
+| :-------------------------------------------------------------------------------: | :------------: | :----------------------------------------------------------: | :----------: | :------: | :-----: | :-------: | :-------: | :----: | :----: | :----------------------------------------------------------------: |
+| [DBNetpp_r50dcn](/configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_200e_trudi.py) | ResNet50-dcnv2 | [ICDAR2015](/configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_1200e_icdar2015.py) | TRUDI Train  | TRUDI Val | 60      | 1024      |  0.9410   | 0.6526 | 0.7707 | `work_dirs/dbnetpp_trudi_200e/dbnetpp_resnet50-dcnv2_fpnc_200e_trudi.pth` |
+| [DBNetpp_r50dcn](/configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_200e_trudi.py) | ResNet50-dcnv2 | [ICDAR2015](/configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_1200e_icdar2015.py) | TRUDI Train  | TRUDI Test | 60      | 1024      |  0.9244   | 0.6190 | 0.7415 | `work_dirs/dbnetpp_trudi_200e/dbnetpp_resnet50-dcnv2_fpnc_200e_trudi.pth` |
+
+Reproduce (single GPU):
+
+```bash
+python tools/dataset_converters/prepare_dataset.py trudi --task textdet
+python tools/train.py configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_200e_trudi.py \
+    --work-dir work_dirs/dbnetpp_trudi_200e
+# test-split evaluation
+python tools/test.py configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_200e_trudi.py \
+    work_dirs/dbnetpp_trudi_200e/dbnetpp_resnet50-dcnv2_fpnc_200e_trudi.pth \
+    --cfg-options test_dataloader.dataset.ann_file=test/textdet.json \
+                  test_dataloader.dataset.data_prefix.img_path=test
+# package a checkpoint as a release-style weight (drops optimizer state)
+python - <<'EOF'
+import torch
+ckpt = torch.load('work_dirs/dbnetpp_trudi_200e/epoch_60.pth', map_location='cpu')
+torch.save({k: ckpt[k] for k in ('meta', 'state_dict', 'message_hub', 'param_schedulers')},
+           'work_dirs/dbnetpp_trudi_200e/dbnetpp_resnet50-dcnv2_fpnc_200e_trudi.pth')
+EOF
+```
+
+The released `.pth` uses the same layout as the benchmark checkpoints
+(`meta` / `state_dict` / `message_hub` / `param_schedulers`), so it loads anywhere an
+official MMOCR weight does (e.g. as `load_from` or `--det-weights`).
+
 ## Citation
 
 ```bibtex

@@ -54,3 +54,19 @@ Models:
         Metrics:
           hmean-iou: 0.8882
     Weights: https://download.openmmlab.com/mmocr/textdet/dbnetpp/dbnetpp_resnet50-oclip_fpnc_1200e_icdar2015/dbnetpp_resnet50-oclip_fpnc_1200e_icdar2015_20221101_124139-4ecb39ac.pth
+
+  - Name: dbnetpp_resnet50-dcnv2_fpnc_200e_trudi
+    In Collection: DBNetpp
+    Config: configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_200e_trudi.py
+    Metadata:
+      Training Data: TRUDI
+    Results:
+      - Task: Text Detection
+        Dataset: TRUDI Val
+        Metrics:
+          hmean-iou: 0.7707
+      - Task: Text Detection
+        Dataset: TRUDI Test
+        Metrics:
+          hmean-iou: 0.7415
+    Weights: work_dirs/dbnetpp_trudi_200e/dbnetpp_resnet50-dcnv2_fpnc_200e_trudi.pth
