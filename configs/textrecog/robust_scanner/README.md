@@ -46,6 +46,50 @@ The attention-based encoder-decoder framework has recently achieved impressive r
 | [RobustScanner](/configs/textrecog/robust_scanner/robustscanner_resnet31_5e_st-sub_mj-sub_sa_real.py) |  4   | 0.9510 |    0.9011    |  0.9320   |     |  0.7578   |     0.8078     | 0.8750 | [model](https://download.openmmlab.com/mmocr/textrecog/robust_scanner/robustscanner_resnet31_5e_st-sub_mj-sub_sa_real/robustscanner_resnet31_5e_st-sub_mj-sub_sa_real_20220915_152447-7fc35929.pth) \| [log](https://download.openmmlab.com/mmocr/textrecog/robust_scanner/robustscanner_resnet31_5e_st-sub_mj-sub_sa_real/20220915_152447.log) |
 | [RobustScanner-TTA](/configs/textrecog/robust_scanner/robustscanner_resnet31_5e_st-sub_mj-sub_sa_real.py) |  4   | 0.9487 |    0.9011    |  0.9261   |     |  0.7805   |     0.8124     | 0.8819 |                                                                       |
 
+### TRUDI
+
+Fine-tuned on the [TRUDI](https://github.com/matthimatik/trudi) `id_text`
+recognition task (all id_text types: `id_iso6346`, `id_en13044_1`,
+`id_registration_number`, `size_and_type_iso6346`, `size_and_type_adr_rid`,
+`size_and_type_mawp`, `size_and_type_portable_tank_instruction`), starting from
+the ICDAR2015 RobustScanner checkpoint above. Dataset: 6025/1263/1219
+train/val/test deskewed word crops (legible texts only — `#`-marked and
+illegible annotations are excluded by the builder); the transcriptions are
+space-free, and the used charset (A-Z, 0-9, `-`) fits the stock
+`english_digits_symbols.txt` dictionary. Metrics are word accuracy
+(`WordMetric`, exact) reported by `tools/test.py`.
+
+|                                       Method                                       |    BackBone    |               Pretrained Model               | Training set | Test set | #epochs | word_acc |                                     Download                                      |
+| :-------------------------------------------------------------------------------: | :------------: | :------------------------------------------: | :----------: | :------: | :-----: | :------: | :------------------------------------------------------------------------------: |
+| [RobustScanner](/configs/textrecog/robust_scanner/robustscanner_resnet31_20e_trudi.py) |    ResNet31    | [ICDAR2015 RobustScanner](#results-and-models) | TRUDI Train  | TRUDI Val |   20    |  0.7435  | `work_dirs/robustscanner_trudi_20e/robustscanner_resnet31_20e_trudi.pth` (epoch 17) |
+| [RobustScanner](/configs/textrecog/robust_scanner/robustscanner_resnet31_20e_trudi.py) |    ResNet31    | [ICDAR2015 RobustScanner](#results-and-models) | TRUDI Train  | TRUDI Test |   20    |  0.7071  | `work_dirs/robustscanner_trudi_20e/robustscanner_resnet31_20e_trudi.pth` (epoch 17) |
+| [RobustScanner](/configs/textrecog/robust_scanner/robustscanner_resnet31_20e_trudi.py) (baseline, before fine-tune) | ResNet31 | ICDAR2015 RobustScanner |     —        | TRUDI Test |    —    |  0.2338  |                                                                                  |
+
+Reproduce (single GPU):
+
+```bash
+python tools/dataset_converters/prepare_dataset.py trudi --task textrecog
+python tools/train.py configs/textrecog/robust_scanner/robustscanner_resnet31_20e_trudi.py \
+    --work-dir work_dirs/robustscanner_trudi_20e
+# test-split evaluation of the best checkpoint (epoch 17)
+python tools/test.py configs/textrecog/robust_scanner/robustscanner_resnet31_20e_trudi.py \
+    work_dirs/robustscanner_trudi_20e/epoch_17.pth \
+    --cfg-options test_dataloader.dataset.ann_file=test/textrecog.json \
+                  test_dataloader.dataset.data_prefix.img_path=test
+# package a checkpoint as a release-style weight (drops optimizer state)
+python - <<'EOF'
+import torch
+ckpt = torch.load('work_dirs/robustscanner_trudi_20e/epoch_17.pth', map_location='cpu')
+torch.save({k: ckpt[k] for k in ('meta', 'state_dict', 'message_hub', 'param_schedulers')},
+           'work_dirs/robustscanner_trudi_20e/robustscanner_resnet31_20e_trudi.pth')
+EOF
+```
+
+The released `.pth` uses the same layout as the benchmark checkpoints
+(`meta` / `state_dict` / `message_hub` / `param_schedulers`), so it loads anywhere an
+official MMOCR weight does (e.g. as `load_from` or `--rec-weights`). `train_robustscanner_trudi.sh`
+runs the same training command.
+
 ## References
 
 <a id="1">\[1\]</a> Li, Hui and Wang, Peng and Shen, Chunhua and Zhang, Guyu. Show, attend and read: A simple and strong baseline for irregular text recognition. In AAAI 2019.

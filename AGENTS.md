@@ -42,6 +42,11 @@ python tools/train.py configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_1200e_
 python tools/train.py configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_200e_trudi.py \
     --work-dir work_dirs/dbnetpp_trudi_200e
 
+# Fine-tune RobustScanner on TRUDI id_text crops from the ICDAR2015 checkpoint
+# (results: configs/textrecog/robust_scanner/README.md; or train_robustscanner_trudi.sh)
+python tools/train.py configs/textrecog/robust_scanner/robustscanner_resnet31_20e_trudi.py \
+    --work-dir work_dirs/robustscanner_trudi_20e
+
 # Evaluate
 python tools/test.py configs/<config>.py work_dirs/<exp>/<ckpt>.pth
 
@@ -103,11 +108,13 @@ package, `mim train/test mmocr …` does **not** work here: mim resolves mmocr t
   clone into `data/cache/` instead), runs `uv sync` + `uv run trudi download_images` (no-op
   when the images are already there) and `uv run trudi build …`, then copies the split dirs
   to `data/trudi/{train,val,test}/`. It is idempotent: existing prepared splits are skipped.
-- The textdet target covers **all id_text types** (iso6346, en13044_1, registration_number,
-  size_and_type_*); `textrecog`/`textspotting` still use `type=id_iso6346` only.
+- The textdet and textrecog targets cover **all id_text types** (iso6346, en13044_1,
+  registration_number, size_and_type_*); `textspotting` still uses `type=id_iso6346` only.
 - Fine-tuned DBNet++ results and release-style weights (same `.pth` layout as the openmmlab
   checkpoints) are documented in `configs/textdet/dbnetpp/README.md`; artifacts live in
-  `work_dirs/dbnetpp_trudi_200e/` (gitignored — retrain to regenerate).
+  `work_dirs/dbnetpp_trudi_200e/` (gitignored — retrain to regenerate). The same for the
+  RobustScanner fine-tune in `configs/textrecog/robust_scanner/README.md`
+  (`work_dirs/robustscanner_trudi_20e/`, also gitignored).
 - Base configs for TRUDI textdet/textrecog/textspotting are in
   `configs/{textdet,textrecog,textspotting}/_base_/datasets/trudi.py` (`data/trudi`).
 - The TRUDI dataset itself: <https://github.com/matthimatik/trudi>.

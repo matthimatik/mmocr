@@ -57,3 +57,21 @@ Models:
         Metrics:
           word_acc: 0.8715
     Weights: https://download.openmmlab.com/mmocr/textrecog/robust_scanner/robustscanner_resnet31_5e_st-sub_mj-sub_sa_real/robustscanner_resnet31_5e_st-sub_mj-sub_sa_real_20220915_152447-7fc35929.pth
+
+  - Name: robustscanner_resnet31_20e_trudi
+    Alias: RobustScannerTRUDI
+    In Collection: RobustScanner
+    Config: configs/textrecog/robust_scanner/robustscanner_resnet31_20e_trudi.py
+    Metadata:
+      Training Data:
+        - TRUDI
+    Results:
+      - Task: Text Recognition
+        Dataset: TRUDI Val
+        Metrics:
+          word_acc: 0.7435
+      - Task: Text Recognition
+        Dataset: TRUDI Test
+        Metrics:
+          word_acc: 0.7071
+    Weights: work_dirs/robustscanner_trudi_20e/robustscanner_resnet31_20e_trudi.pth
