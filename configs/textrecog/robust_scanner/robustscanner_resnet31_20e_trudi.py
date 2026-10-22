@@ -39,7 +39,11 @@ val_dataloader = dict(
 test_dataloader = val_dataloader
 
 val_evaluator = dict(dataset_prefixes=['TRUDI'])
-test_evaluator = val_evaluator
+# The base config aliases `test_evaluator = val_evaluator`; re-declaring it
+# here with an explicit type keeps the merge from dropping the evaluator type
+# (otherwise `tools/test.py` fails with "MultiDatasetsEvaluator is not in the
+# mmocr::metric registry").
+test_evaluator = dict(type='MultiDatasetsEvaluator', dataset_prefixes=['TRUDI'])
 
 # Fine-tune schedule: lower LR than the from-scratch 5e recipe, 20 epochs.
 _base_.optim_wrapper.optimizer.lr = 1e-4
