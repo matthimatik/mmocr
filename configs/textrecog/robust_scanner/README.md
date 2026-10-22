@@ -90,6 +90,45 @@ The released `.pth` uses the same layout as the benchmark checkpoints
 official MMOCR weight does (e.g. as `load_from` or `--rec-weights`). `train_robustscanner_trudi.sh`
 runs the same training command.
 
+### Synthetic v1
+
+Fine-tuned on the synthetic v1 dataset (CTA2024 renders from
+`synthetic-data-generation`, ISO6346 container IDs and size/type codes), starting
+from the TRUDI checkpoint above. Prepared with
+`tools/dataset_converters/cta2024_to_mmocr.py` (scene-level 90/10 train/val
+split; legible, horizontal-text instances only, space-free transcriptions):
+47309/5714 train/val crops. Metrics are word accuracy (`WordMetric`, exact)
+and character precision/recall on the synth val split.
+
+|                                       Method                                       |  BackBone  |               Pretrained Model               | Training set  |  Test set   | #epochs | word_acc |                                     Download                                      |
+| :-------------------------------------------------------------------------------: | :--------: | :------------------------------------------: | :-----------: | :---------: | :-----: | :------: | :------------------------------------------------------------------------------: |
+| [RobustScanner](/configs/textrecog/robust_scanner/robustscanner_resnet31_10e_synth_v1.py) |  ResNet31  | [TRUDI RobustScanner](#trudi) | Synth v1 Train | Synth v1 Val |   10    |  0.7037  | `work_dirs/robustscanner_synth_v1_10e/robustscanner_resnet31_10e_synth_v1.pth` (epoch 10) |
+
+This is a pure synthetic-domain adaptation: the weights target synthetic imagery
+only and are expected to perform poorly on real TRUDI crops (the lower LR than
+the detection fine-tune limits, but does not prevent, forgetting of the real
+domain).
+
+Reproduce (single GPU):
+
+```bash
+# build the synth dataset (hard-links rgb.jpg, writes crops + JSONs)
+python tools/dataset_converters/cta2024_to_mmocr.py \
+    --src /data/8hirsch/synthetic-data-generation/src/output/dataset \
+    --dst data/synth_v1
+python tools/train.py configs/textrecog/robust_scanner/robustscanner_resnet31_10e_synth_v1.py \
+    --work-dir work_dirs/robustscanner_synth_v1_10e
+# package the best checkpoint as a release-style weight (drops optimizer state)
+python - <<'EOF'
+import torch
+ckpt = torch.load('work_dirs/robustscanner_synth_v1_10e/epoch_10.pth', map_location='cpu')
+torch.save({k: ckpt[k] for k in ('meta', 'state_dict', 'message_hub', 'param_schedulers')},
+           'work_dirs/robustscanner_synth_v1_10e/robustscanner_resnet31_10e_synth_v1.pth')
+EOF
+```
+
+`train_robustscanner_synth_v1.sh` runs the same training command.
+
 ## References
 
 <a id="1">\[1\]</a> Li, Hui and Wang, Peng and Shen, Chunhua and Zhang, Guyu. Show, attend and read: A simple and strong baseline for irregular text recognition. In AAAI 2019.

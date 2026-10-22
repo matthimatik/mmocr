@@ -47,6 +47,15 @@ python tools/train.py configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_200e_t
 python tools/train.py configs/textrecog/robust_scanner/robustscanner_resnet31_20e_trudi.py \
     --work-dir work_dirs/robustscanner_trudi_20e
 
+# Fine-tune both models on the synthetic v1 dataset from the TRUDI checkpoints
+# (synthetic-domain only — real TRUDI metrics drop; build data first with
+# tools/dataset_converters/cta2024_to_mmocr.py; results in the READMEs; or
+# train_dbnetpp_synth_v1.sh / train_robustscanner_synth_v1.sh)
+python tools/train.py configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_30e_synth_v1.py \
+    --work-dir work_dirs/dbnetpp_synth_v1_30e
+python tools/train.py configs/textrecog/robust_scanner/robustscanner_resnet31_10e_synth_v1.py \
+    --work-dir work_dirs/robustscanner_synth_v1_10e
+
 # Evaluate
 python tools/test.py configs/<config>.py work_dirs/<exp>/<ckpt>.pth
 
@@ -118,6 +127,14 @@ package, `mim train/test mmocr …` does **not** work here: mim resolves mmocr t
 - Base configs for TRUDI textdet/textrecog/textspotting are in
   `configs/{textdet,textrecog,textspotting}/_base_/datasets/trudi.py` (`data/trudi`).
 - The TRUDI dataset itself: <https://github.com/matthimatik/trudi>.
+- Synthetic v1: `python tools/dataset_converters/cta2024_to_mmocr.py` converts the v1
+  CTA2024 renders (`synthetic-data-generation/src/output/dataset`, ISO6346 ID + size/type
+  texts) to `data/synth_v1/{train,val}/` in the TRUDI MMOCR layout (hard-linked scene
+  images, padded recognition crops, aspect filter dropping diagonal-text quads from the
+  recognition set only). Base configs: `configs/{textdet,textrecog}/_base_/datasets/synth_v1.py`.
+  Pure synthetic-domain fine-tunes from the TRUDI checkpoints: the dbnetpp 30e and
+  robust_scanner 10e `*_synth_v1.py` configs (results in the respective READMEs;
+  `work_dirs/{dbnetpp_synth_v1_30e,robustscanner_synth_v1_10e}/`).
 
 ## Known test-suite state
 

@@ -70,6 +70,44 @@ The released `.pth` uses the same layout as the benchmark checkpoints
 (`meta` / `state_dict` / `message_hub` / `param_schedulers`), so it loads anywhere an
 official MMOCR weight does (e.g. as `load_from` or `--det-weights`).
 
+### Synthetic v1
+
+Fine-tuned on the synthetic v1 dataset (CTA2024 renders from
+`synthetic-data-generation`, ISO6346 container IDs and size/type codes), starting
+from the TRUDI checkpoint above. Prepared with
+`tools/dataset_converters/cta2024_to_mmocr.py` (scene-level 90/10 train/val
+split; fully occluded texts are `ignore`d): 3199/379 train/val images with
+87973/10576 instances. Metrics are reported by `HmeanIOUMetric` on the synth
+val split.
+
+|                                      Method                                       |    BackBone    |                       Pretrained Model                       | Training set  |  Test set   | #epochs | Test size | Precision | Recall | Hmean  |                             Download                             |
+| :-------------------------------------------------------------------------------: | :------------: | :----------------------------------------------------------: | :-----------: | :---------: | :-----: | :-------: | :-------: | :----: | :----: | :----------------------------------------------------------------: |
+| [DBNetpp_r50dcn](/configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_30e_synth_v1.py) | ResNet50-dcnv2 | [TRUDI](#trudi) | Synth v1 Train | Synth v1 Val |   30    |   1024    |  0.9360   | 0.5580 | 0.6992 | `work_dirs/dbnetpp_synth_v1_30e/dbnetpp_resnet50-dcnv2_fpnc_30e_synth_v1.pth` |
+
+This is a pure synthetic-domain adaptation: the weights target synthetic imagery
+only and are expected to perform poorly on real TRUDI frames (measured TRUDI
+val Hmean after the fine-tune: 0.19, vs 0.77 for the TRUDI checkpoint).
+
+Reproduce (single GPU):
+
+```bash
+# build the synth dataset (hard-links rgb.jpg, writes crops + JSONs)
+python tools/dataset_converters/cta2024_to_mmocr.py \
+    --src /data/8hirsch/synthetic-data-generation/src/output/dataset \
+    --dst data/synth_v1
+python tools/train.py configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_30e_synth_v1.py \
+    --work-dir work_dirs/dbnetpp_synth_v1_30e
+# package the last epoch as a release-style weight (drops optimizer state)
+python - <<'EOF'
+import torch
+ckpt = torch.load('work_dirs/dbnetpp_synth_v1_30e/epoch_30.pth', map_location='cpu')
+torch.save({k: ckpt[k] for k in ('meta', 'state_dict', 'message_hub', 'param_schedulers')},
+           'work_dirs/dbnetpp_synth_v1_30e/dbnetpp_resnet50-dcnv2_fpnc_30e_synth_v1.pth')
+EOF
+```
+
+`train_dbnetpp_synth_v1.sh` runs the same training command.
+
 ## Citation
 
 ```bibtex
