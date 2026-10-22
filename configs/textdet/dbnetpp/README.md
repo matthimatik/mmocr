@@ -35,40 +35,17 @@ task (all id_text types: `id_iso6346`, `id_en13044_1`, `id_registration_number`,
 `size_and_type_iso6346`, `size_and_type_adr_rid`, `size_and_type_mawp`,
 `size_and_type_portable_tank_instruction`), starting from the
 [ICDAR2015](/configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_1200e_icdar2015.py)
-DBNetpp_r50dcn checkpoint. Dataset: 1617/346/347 train/val/test images with
-13277/2831/2742 instances (fully illegible texts are `ignore`d). The run was stopped
-after epoch 73 of the 200-epoch schedule; the released weights are the best val
-checkpoint (epoch 60). Metrics are reported by `HmeanIOUMetric` at the
-best-matching score threshold, as for the benchmarks above.
+DBNetpp_r50dcn checkpoint; 1617/346/347 train/val/test images with
+13277/2831/2742 instances (fully illegible texts are `ignore`d). Metrics are reported
+by `HmeanIOUMetric` at the best-matching score threshold, as for the benchmarks above.
 
 |                                      Method                                       |    BackBone    |                       Pretrained Model                       | Training set | Test set | #epochs | Test size | Precision | Recall | Hmean  |                             Download                             |
 | :-------------------------------------------------------------------------------: | :------------: | :----------------------------------------------------------: | :----------: | :------: | :-----: | :-------: | :-------: | :----: | :----: | :----------------------------------------------------------------: |
 | [DBNetpp_r50dcn](/configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_200e_trudi.py) | ResNet50-dcnv2 | [ICDAR2015](/configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_1200e_icdar2015.py) | TRUDI Train  | TRUDI Val | 60      | 1024      |  0.9410   | 0.6526 | 0.7707 | `work_dirs/dbnetpp_trudi_200e/dbnetpp_resnet50-dcnv2_fpnc_200e_trudi.pth` |
 | [DBNetpp_r50dcn](/configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_200e_trudi.py) | ResNet50-dcnv2 | [ICDAR2015](/configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_1200e_icdar2015.py) | TRUDI Train  | TRUDI Test | 60      | 1024      |  0.9244   | 0.6190 | 0.7415 | `work_dirs/dbnetpp_trudi_200e/dbnetpp_resnet50-dcnv2_fpnc_200e_trudi.pth` |
 
-Reproduce (single GPU):
-
-```bash
-python tools/dataset_converters/prepare_dataset.py trudi --task textdet
-python tools/train.py configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_200e_trudi.py \
-    --work-dir work_dirs/dbnetpp_trudi_200e
-# test-split evaluation
-python tools/test.py configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_200e_trudi.py \
-    work_dirs/dbnetpp_trudi_200e/dbnetpp_resnet50-dcnv2_fpnc_200e_trudi.pth \
-    --cfg-options test_dataloader.dataset.ann_file=test/textdet.json \
-                  test_dataloader.dataset.data_prefix.img_path=test
-# package a checkpoint as a release-style weight (drops optimizer state)
-python - <<'EOF'
-import torch
-ckpt = torch.load('work_dirs/dbnetpp_trudi_200e/epoch_60.pth', map_location='cpu')
-torch.save({k: ckpt[k] for k in ('meta', 'state_dict', 'message_hub', 'param_schedulers')},
-           'work_dirs/dbnetpp_trudi_200e/dbnetpp_resnet50-dcnv2_fpnc_200e_trudi.pth')
-EOF
-```
-
-The released `.pth` uses the same layout as the benchmark checkpoints
-(`meta` / `state_dict` / `message_hub` / `param_schedulers`), so it loads anywhere an
-official MMOCR weight does (e.g. as `load_from` or `--det-weights`).
+Experiment record (training recipe, checkpoint packaging, deeper evaluation):
+[ilu-text-spotting/experiments/dbnetpp-trudi-200e](https://github.com/matthimatik/ilu-text-spotting/tree/main/experiments/dbnetpp-trudi-200e).
 
 ### Synthetic v1
 
@@ -85,28 +62,10 @@ val split.
 | [DBNetpp_r50dcn](/configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_30e_synth_v1.py) | ResNet50-dcnv2 | [TRUDI](#trudi) | Synth v1 Train | Synth v1 Val |   30    |   1024    |  0.9360   | 0.5580 | 0.6992 | `work_dirs/dbnetpp_synth_v1_30e/dbnetpp_resnet50-dcnv2_fpnc_30e_synth_v1.pth` |
 
 This is a pure synthetic-domain adaptation: the weights target synthetic imagery
-only and are expected to perform poorly on real TRUDI frames (measured TRUDI
-val Hmean after the fine-tune: 0.19, vs 0.77 for the TRUDI checkpoint).
+only and are expected to perform poorly on real TRUDI frames.
 
-Reproduce (single GPU):
-
-```bash
-# build the synth dataset (hard-links rgb.jpg, writes crops + JSONs)
-python tools/dataset_converters/cta2024_to_mmocr.py \
-    --src /data/8hirsch/synthetic-data-generation/src/output/dataset \
-    --dst data/synth_v1
-python tools/train.py configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_30e_synth_v1.py \
-    --work-dir work_dirs/dbnetpp_synth_v1_30e
-# package the last epoch as a release-style weight (drops optimizer state)
-python - <<'EOF'
-import torch
-ckpt = torch.load('work_dirs/dbnetpp_synth_v1_30e/epoch_30.pth', map_location='cpu')
-torch.save({k: ckpt[k] for k in ('meta', 'state_dict', 'message_hub', 'param_schedulers')},
-           'work_dirs/dbnetpp_synth_v1_30e/dbnetpp_resnet50-dcnv2_fpnc_30e_synth_v1.pth')
-EOF
-```
-
-`train_dbnetpp_synth_v1.sh` runs the same training command.
+Experiment record (training recipe, checkpoint packaging, deeper evaluation):
+[ilu-text-spotting/experiments/dbnetpp-synth-v1-30e](https://github.com/matthimatik/ilu-text-spotting/tree/main/experiments/dbnetpp-synth-v1-30e).
 
 ## Citation
 

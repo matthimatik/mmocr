@@ -52,12 +52,11 @@ Fine-tuned on the [TRUDI](https://github.com/matthimatik/trudi) `id_text`
 recognition task (all id_text types: `id_iso6346`, `id_en13044_1`,
 `id_registration_number`, `size_and_type_iso6346`, `size_and_type_adr_rid`,
 `size_and_type_mawp`, `size_and_type_portable_tank_instruction`), starting from
-the ICDAR2015 RobustScanner checkpoint above. Dataset: 6025/1263/1219
-train/val/test deskewed word crops (legible texts only — `#`-marked and
-illegible annotations are excluded by the builder); the transcriptions are
-space-free, and the used charset (A-Z, 0-9, `-`) fits the stock
-`english_digits_symbols.txt` dictionary. Metrics are word accuracy
-(`WordMetric`, exact) reported by `tools/test.py`.
+the ICDAR2015 RobustScanner checkpoint above; 6025/1263/1219 train/val/test
+deskewed word crops (legible texts only — `#`-marked and illegible annotations
+are excluded by the builder). The transcriptions are space-free, and the used
+charset (A-Z, 0-9, `-`) fits the stock `english_digits_symbols.txt` dictionary.
+Metrics are word accuracy (`WordMetric`, exact) reported by `tools/test.py`.
 
 |                                       Method                                       |    BackBone    |               Pretrained Model               | Training set | Test set | #epochs | word_acc |                                     Download                                      |
 | :-------------------------------------------------------------------------------: | :------------: | :------------------------------------------: | :----------: | :------: | :-----: | :------: | :------------------------------------------------------------------------------: |
@@ -65,38 +64,16 @@ space-free, and the used charset (A-Z, 0-9, `-`) fits the stock
 | [RobustScanner](/configs/textrecog/robust_scanner/robustscanner_resnet31_20e_trudi.py) |    ResNet31    | [ICDAR2015 RobustScanner](#results-and-models) | TRUDI Train  | TRUDI Test |   20    |  0.7071  | `work_dirs/robustscanner_trudi_20e/robustscanner_resnet31_20e_trudi.pth` (epoch 17) |
 | [RobustScanner](/configs/textrecog/robust_scanner/robustscanner_resnet31_20e_trudi.py) (baseline, before fine-tune) | ResNet31 | ICDAR2015 RobustScanner |     —        | TRUDI Test |    —    |  0.2338  |                                                                                  |
 
-Reproduce (single GPU):
-
-```bash
-python tools/dataset_converters/prepare_dataset.py trudi --task textrecog
-python tools/train.py configs/textrecog/robust_scanner/robustscanner_resnet31_20e_trudi.py \
-    --work-dir work_dirs/robustscanner_trudi_20e
-# test-split evaluation of the best checkpoint (epoch 17)
-python tools/test.py configs/textrecog/robust_scanner/robustscanner_resnet31_20e_trudi.py \
-    work_dirs/robustscanner_trudi_20e/epoch_17.pth \
-    --cfg-options test_dataloader.dataset.ann_file=test/textrecog.json \
-                  test_dataloader.dataset.data_prefix.img_path=test
-# package a checkpoint as a release-style weight (drops optimizer state)
-python - <<'EOF'
-import torch
-ckpt = torch.load('work_dirs/robustscanner_trudi_20e/epoch_17.pth', map_location='cpu')
-torch.save({k: ckpt[k] for k in ('meta', 'state_dict', 'message_hub', 'param_schedulers')},
-           'work_dirs/robustscanner_trudi_20e/robustscanner_resnet31_20e_trudi.pth')
-EOF
-```
-
-The released `.pth` uses the same layout as the benchmark checkpoints
-(`meta` / `state_dict` / `message_hub` / `param_schedulers`), so it loads anywhere an
-official MMOCR weight does (e.g. as `load_from` or `--rec-weights`). `train_robustscanner_trudi.sh`
-runs the same training command.
+Experiment record (training recipe, checkpoint packaging, deeper evaluation):
+[ilu-text-spotting/experiments/robustscanner-trudi-20e](https://github.com/matthimatik/ilu-text-spotting/tree/main/experiments/robustscanner-trudi-20e).
 
 ### Synthetic v1
 
 Fine-tuned on the synthetic v1 dataset (CTA2024 renders from
-`synthetic-data-generation`, ISO6346 container IDs and size/type codes), starting
-from the TRUDI checkpoint above. Prepared with
+`synthetic-data-generation`, ISO6346 container IDs and size/type codes), starting from
+the TRUDI checkpoint above. Prepared with
 `tools/dataset_converters/cta2024_to_mmocr.py` (scene-level 90/10 train/val
-split; legible, horizontal-text instances only, space-free transcriptions):
+split, legible, horizontal-text instances only, space-free transcriptions):
 47309/5714 train/val crops. Metrics are word accuracy (`WordMetric`, exact)
 and character precision/recall on the synth val split.
 
@@ -105,29 +82,11 @@ and character precision/recall on the synth val split.
 | [RobustScanner](/configs/textrecog/robust_scanner/robustscanner_resnet31_10e_synth_v1.py) |  ResNet31  | [TRUDI RobustScanner](#trudi) | Synth v1 Train | Synth v1 Val |   10    |  0.7037  | `work_dirs/robustscanner_synth_v1_10e/robustscanner_resnet31_10e_synth_v1.pth` (epoch 10) |
 
 This is a pure synthetic-domain adaptation: the weights target synthetic imagery
-only and are expected to perform poorly on real TRUDI crops (the lower LR than
-the detection fine-tune limits, but does not prevent, forgetting of the real
-domain).
+only and are expected to perform poorly on real TRUDI crops.
 
-Reproduce (single GPU):
+Experiment record (training recipe, checkpoint packaging, deeper evaluation):
+[ilu-text-spotting/experiments/robustscanner-synth-v1-10e](https://github.com/matthimatik/ilu-text-spotting/tree/main/experiments/robustscanner-synth-v1-10e).
 
-```bash
-# build the synth dataset (hard-links rgb.jpg, writes crops + JSONs)
-python tools/dataset_converters/cta2024_to_mmocr.py \
-    --src /data/8hirsch/synthetic-data-generation/src/output/dataset \
-    --dst data/synth_v1
-python tools/train.py configs/textrecog/robust_scanner/robustscanner_resnet31_10e_synth_v1.py \
-    --work-dir work_dirs/robustscanner_synth_v1_10e
-# package the best checkpoint as a release-style weight (drops optimizer state)
-python - <<'EOF'
-import torch
-ckpt = torch.load('work_dirs/robustscanner_synth_v1_10e/epoch_10.pth', map_location='cpu')
-torch.save({k: ckpt[k] for k in ('meta', 'state_dict', 'message_hub', 'param_schedulers')},
-           'work_dirs/robustscanner_synth_v1_10e/robustscanner_resnet31_10e_synth_v1.pth')
-EOF
-```
-
-`train_robustscanner_synth_v1.sh` runs the same training command.
 
 ## References
 

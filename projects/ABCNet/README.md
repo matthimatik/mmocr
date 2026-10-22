@@ -78,7 +78,8 @@ To find more variants, please visit the [official model zoo](https://github.com/
 | trudi-finetune | [SynthText](https://download.openmmlab.com/mmocr/textspotting/abcnet/abcnet_resnet50_fpn_500e_icdar2015/abcnet_resnet50_fpn_pretrain-d060636c.pth) |     0.2577     |  0.6331   | `work_dirs/abcnet_trudi_full/epoch_200.pth` (local) |
 
 Finetuned on TRUDI (200 epochs, lr 1e-5, BatchNorm-adapted, `#` = illegible-character placeholder
-which is excluded from the recognition loss via `ignore_char='#'`). Best E2E hmean at e185, best det-hmean 0.6331 at e185.
+which is excluded from the recognition loss via `ignore_char='#'`). Experiment record (training
+recipe, gotchas): [ilu-text-spotting/experiments/abcnet-trudi](https://github.com/matthimatik/ilu-text-spotting/tree/main/experiments/abcnet-trudi).
 
 ## Citation
 

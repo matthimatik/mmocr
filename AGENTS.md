@@ -6,6 +6,9 @@ This is a fork of [open-mmlab/mmocr](https://github.com/open-mmlab/mmocr) (v1.0.
 first-class support for the TRUDI container-text dataset (dataset preparer, base configs,
 DBNet++ text-detection config) and an ABCNet text-spotting finetune under `projects/ABCNet/`.
 
+**Training recipes, results, and deeper evaluation live in the sibling
+[`ilu-text-spotting`](../ilu-text-spotting) repo** — this fork stays a model/config repo.
+
 ## Environment setup
 
 Run this from the repository root:
@@ -37,20 +40,19 @@ Always run from the repository root; configs and the dataset preparer use relati
 python tools/train.py configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_1200e_trudi.py \
     --work-dir work_dirs/dbnetpp_trudi
 
-# Fine-tune DBNet++ on TRUDI id_texts from the ICDAR2015 checkpoint (results:
-# configs/textdet/dbnetpp/README.md; or just run train_dbnetpp_trudi.sh)
+# Fine-tune DBNet++ on TRUDI id_texts from the ICDAR2015 checkpoint
+# (results: configs/textdet/dbnetpp/README.md; recipe: ../ilu-text-spotting/experiments/dbnetpp-trudi-200e)
 python tools/train.py configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_200e_trudi.py \
     --work-dir work_dirs/dbnetpp_trudi_200e
 
 # Fine-tune RobustScanner on TRUDI id_text crops from the ICDAR2015 checkpoint
-# (results: configs/textrecog/robust_scanner/README.md; or train_robustscanner_trudi.sh)
+# (results: configs/textrecog/robust_scanner/README.md; recipe: ../ilu-text-spotting/experiments/robustscanner-trudi-20e)
 python tools/train.py configs/textrecog/robust_scanner/robustscanner_resnet31_20e_trudi.py \
     --work-dir work_dirs/robustscanner_trudi_20e
 
 # Fine-tune both models on the synthetic v1 dataset from the TRUDI checkpoints
 # (synthetic-domain only — real TRUDI metrics drop; build data first with
-# tools/dataset_converters/cta2024_to_mmocr.py; results in the READMEs; or
-# train_dbnetpp_synth_v1.sh / train_robustscanner_synth_v1.sh)
+# tools/dataset_converters/cta2024_to_mmocr.py; recipes: ../ilu-text-spotting/experiments/)
 python tools/train.py configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_30e_synth_v1.py \
     --work-dir work_dirs/dbnetpp_synth_v1_30e
 python tools/train.py configs/textrecog/robust_scanner/robustscanner_resnet31_10e_synth_v1.py \
@@ -84,13 +86,16 @@ package, `mim train/test mmocr …` does **not** work here: mim resolves mmocr t
 
 ### Gotchas
 
-- **GPU count / helper scripts**: this machine has 1 GPU. `train_dbnetpp_trudi.sh` is
-  single-GPU and launches the TRUDI DBNet++ fine-tune; `train_trudi.sh` (ABCNet) and some
-  scripts under `projects/` still assume `--nproc_per_node=2` **and hard-code the absolute
-  path `/data/8hirsch/mmocr`** (interpreter, PYTHONPATH, config paths) — in a clone at
+- **GPU count**: this machine has 1 GPU. The training recipes in
+  `../ilu-text-spotting/experiments/*/train.sh` are single-GPU; `train_trudi.sh` (ABCNet, in
+  that repo) still assumes `--nproc_per_node=2` **and hard-codes the absolute path
+  `/data/8hirsch/mmocr`** (interpreter, PYTHONPATH, config paths) — in a clone at
   another location they run the wrong tree or fail. Prefer the inline commands in Quick
   commands; if you do use them, override with `--nproc_per_node=1` and fix the paths first.
   Two ranks on one 24 GB GPU will OOM or crash.
+- **Long runs**: a `tools/train.py` / `tools/test.py` invocation that outlives the current
+  shell session gets killed with it — launch it detached
+  (`setsid nohup … > /tmp/<log>.log 2>&1 &`) and poll the log.
 - **`projects/` packages are not installed**: configs that import from `projects/…`
   (e.g. ABCNet) need the project dir on `PYTHONPATH`:
   `PYTHONPATH="$PWD:$PWD/projects/ABCNet" python tools/train.py projects/ABCNet/...`
@@ -119,11 +124,6 @@ package, `mim train/test mmocr …` does **not** work here: mim resolves mmocr t
   to `data/trudi/{train,val,test}/`. It is idempotent: existing prepared splits are skipped.
 - The textdet and textrecog targets cover **all id_text types** (iso6346, en13044_1,
   registration_number, size_and_type_*); `textspotting` still uses `type=id_iso6346` only.
-- Fine-tuned DBNet++ results and release-style weights (same `.pth` layout as the openmmlab
-  checkpoints) are documented in `configs/textdet/dbnetpp/README.md`; artifacts live in
-  `work_dirs/dbnetpp_trudi_200e/` (gitignored — retrain to regenerate). The same for the
-  RobustScanner fine-tune in `configs/textrecog/robust_scanner/README.md`
-  (`work_dirs/robustscanner_trudi_20e/`, also gitignored).
 - Base configs for TRUDI textdet/textrecog/textspotting are in
   `configs/{textdet,textrecog,textspotting}/_base_/datasets/trudi.py` (`data/trudi`).
 - The TRUDI dataset itself: <https://github.com/matthimatik/trudi>.
@@ -132,9 +132,24 @@ package, `mim train/test mmocr …` does **not** work here: mim resolves mmocr t
   texts) to `data/synth_v1/{train,val}/` in the TRUDI MMOCR layout (hard-linked scene
   images, padded recognition crops, aspect filter dropping diagonal-text quads from the
   recognition set only). Base configs: `configs/{textdet,textrecog}/_base_/datasets/synth_v1.py`.
-  Pure synthetic-domain fine-tunes from the TRUDI checkpoints: the dbnetpp 30e and
-  robust_scanner 10e `*_synth_v1.py` configs (results in the respective READMEs;
-  `work_dirs/{dbnetpp_synth_v1_30e,robustscanner_synth_v1_10e}/`).
+
+## Results and experiments
+
+The fine-tuned model results (DBNet++ / RobustScanner / ABCNet on TRUDI and synthetic v1)
+are listed in the config READMEs and `metafile.yml` files, as for the upstream benchmarks.
+Everything around them — training recipes, result tables, per-id-type breakdowns, PR
+sweeps, error galleries, cross-model reports — lives in the sibling
+[`ilu-text-spotting`](../ilu-text-spotting) repo:
+
+- run records: `../ilu-text-spotting/experiments/`
+- evaluation protocol: `../ilu-text-spotting/docs/evaluation.md`
+- checkpoint card: `../ilu-text-spotting/models/README.md`
+
+Fine-tuned checkpoints are in `work_dirs/{dbnetpp_trudi_200e,robustscanner_trudi_20e,
+dbnetpp_synth_v1_30e,robustscanner_synth_v1_10e}/` (gitignored — retrain to regenerate).
+They use the release-style layout (`meta` / `state_dict` / `message_hub` /
+`param_schedulers`) and load anywhere an official MMOCR weight does (e.g. as `load_from` or
+`--det-weights` / `--rec-weights`).
 
 ## Known test-suite state
 
@@ -160,7 +175,6 @@ alone), suspect cross-test pollution in `tests/` before suspecting the environme
   `projects/ABCNet/config/abcnet/`.
 - `configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_1200e_trudi.py` — TRUDI DBNet++ config.
 - `configs/textdet/dbnetpp/dbnetpp_resnet50-dcnv2_fpnc_200e_trudi.py` — TRUDI id_text
-  fine-tune (ICDAR2015 init, early-stopped at epoch 73; results/weights in the dbnetpp
-  README) — the run `train_dbnetpp_trudi.sh` reproduces.
+  fine-tune (ICDAR2015 init; results in the dbnetpp README).
 - `setup_env.sh` — pinned environment bootstrap; keep it in sync with this file.
 - Upstream contribution flow (pre-commit, CI) is described in `.github/CONTRIBUTING.md`.
